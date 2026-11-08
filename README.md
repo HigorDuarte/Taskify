@@ -95,8 +95,8 @@ Deletar um usuário apaga seus projetos, e deletar um projeto apaga suas tarefas
 
 ```bash
 # 1. Clone o repositório e instale as dependências
-git clone https://github.com/SEU_USUARIO/taskify.git
-cd taskify
+git clone https://github.com/HigorDuarte/Taskify.git
+cd Taskify
 npm install
 
 # 2. Suba o PostgreSQL em um container
@@ -161,4 +161,6 @@ Este projeto foi feito para praticar, do zero: modelagem de banco com relações
 
 ## Autor
 
-**Higor**, desenvolvedor backend em formação.
+**Higor Duarte**, desenvolvedor backend em formação.
+
+[GitHub](https://github.com/HigorDuarte)
