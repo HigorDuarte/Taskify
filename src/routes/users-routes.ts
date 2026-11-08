@@ -3,12 +3,15 @@ import { UsersControllers } from "@/controllers/users-controller";
 import { ensureAuthenticated } from "@/middlewares/ensure-authenticated";
 import { verifyUserAuthorization } from "@/middlewares/verify-user-authorization";
 
+const usersControllers = new UsersControllers()
+
 const usersRoutes = Router()
 
-const userControllers = new UsersControllers()
+usersRoutes.post("/", usersControllers.create)
 
-usersRoutes.post("/", userControllers.create)
-usersRoutes.delete("/:id", ensureAuthenticated, userControllers.delete)
-usersRoutes.get("/", ensureAuthenticated, verifyUserAuthorization(["ADMIN"]), userControllers.index)
+usersRoutes.use(ensureAuthenticated)
+
+usersRoutes.delete("/:id", usersControllers.delete)
+usersRoutes.get("/", verifyUserAuthorization(["ADMIN"]), usersControllers.index)
 
 export {usersRoutes}

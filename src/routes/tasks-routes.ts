@@ -4,11 +4,11 @@ import { Router } from "express";
 
 const tasksControllers = new TasksControllers
 
-const taskRoutes = Router()
+const tasksRoutes = Router()
 
-taskRoutes.get("/:projectId", ensureAuthenticated, tasksControllers.index)
-taskRoutes.patch("/:taskId/tasks", ensureAuthenticated, tasksControllers.update)
-taskRoutes.delete("/:taskId/tasks", ensureAuthenticated, tasksControllers.delete)
-taskRoutes.post("/:projectId/tasks", ensureAuthenticated, tasksControllers.create)
+tasksRoutes.use(ensureAuthenticated)
 
-export {taskRoutes}
+tasksRoutes.patch("/:taskId", tasksControllers.update)
+tasksRoutes.delete("/:taskId", tasksControllers.delete)
+
+export {tasksRoutes}
