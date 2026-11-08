@@ -23,6 +23,7 @@ Projeto backend (sem front-end) desenvolvido do zero para consolidar os conceito
 - Autorização por propriedade: usuários só acessam os próprios projetos e tarefas
 - CRUD de projetos e de tarefas, com status em ambos
 - Regras de negócio protegendo a integridade dos dados
+- Seed para criação do primeiro usuário `ADMIN`
 - Tratamento de erros centralizado (`AppError` + middleware de erro)
 - Variáveis de ambiente validadas com Zod na inicialização
 
@@ -70,11 +71,12 @@ Deletar um usuário apaga seus projetos, e deletar um projeto apaga suas tarefas
 
 **Autorização por papel:** o middleware `verifyUserAuthorization(["ADMIN"])` bloqueia, com `403`, usuários sem o papel exigido.
 
-**Autorização por propriedade:** nas rotas de projetos e tarefas, o controller confere se o recurso pertence ao usuário do token. Para não revelar a existência de recursos alheios, tentar acessar o projeto ou a tarefa de outra pessoa retorna `404`, a mesma resposta de um recurso inexistente. `ADMIN` ignora essa checagem.
+**Autorização por propriedade:** nas rotas de projetos e tarefas, a checagem confere se o recurso pertence ao usuário do token. Para não revelar a existência de recursos alheios, tentar acessar o projeto ou a tarefa de outra pessoa retorna `404`, a mesma resposta de um recurso inexistente. `ADMIN` ignora essa checagem.
 
 **Decisões de segurança:**
 
 - O cadastro público nunca cria `ADMIN` e nunca aceita `role` ou `ownerId` vindos do body.
+- O primeiro `ADMIN` é criado por um seed, com credenciais lidas de variáveis de ambiente.
 - O `passwordHash` nunca é devolvido pela API.
 - Login com e-mail inexistente e com senha errada retorna a mesma mensagem (`401`).
 - E-mails são normalizados (`trim` + minúsculas).
@@ -106,13 +108,17 @@ docker run --name taskify-db -e POSTGRES_USER=postgres \
 
 # 3. Configure as variáveis de ambiente
 cp .env.example .env
-# edite o .env com a sua DATABASE_URL e um JWT_SECRET longo e aleatório
+# edite o .env com a sua DATABASE_URL, um JWT_SECRET longo e aleatório
+# e os dados do usuário admin
 
 # 4. Rode as migrations e gere o Prisma Client
 npx prisma migrate dev
 npx prisma generate
 
-# 5. Inicie o servidor
+# 5. Crie o usuário admin
+npm run seed
+
+# 6. Inicie o servidor
 npm run dev
 ```
 
@@ -122,13 +128,21 @@ Para gerar um `JWT_SECRET` seguro:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+O seed usa `upsert`, então pode ser executado mais de uma vez sem duplicar o admin. Se já existir um usuário com o e-mail do admin, ele não é alterado.
+
 ### Variáveis de ambiente
 
 | Variável | Descrição |
 |---|---|
 | `PORT` | Porta do servidor (padrão `3333`) |
+| `NODE_ENV` | `development`, `test` ou `production` (padrão `development`) |
 | `DATABASE_URL` | String de conexão do PostgreSQL |
 | `JWT_SECRET` | Segredo usado para assinar os tokens (mínimo de 32 caracteres) |
+| `ADMIN_NAME` | Nome do usuário admin criado pelo seed |
+| `ADMIN_EMAIL` | E-mail do usuário admin criado pelo seed |
+| `ADMIN_PASSWORD` | Senha do usuário admin criado pelo seed (mínimo de 6 caracteres) |
+
+As variáveis `ADMIN_*` são usadas apenas pelo seed.
 
 ## Estrutura do projeto
 
@@ -146,14 +160,15 @@ src/
   server.ts
 prisma/
   schema.prisma
+  seed.ts        # criação do usuário admin
   migrations/
 ```
 
 ## Próximos passos
 
+- [x] Seed para criação do primeiro usuário `ADMIN`
 - [ ] Testes automatizados com Jest e Supertest (auth, autorização por papel e por propriedade)
 - [ ] Refresh token (access token curto + refresh token)
-- [ ] Seed para criação do primeiro usuário `ADMIN`
 
 ## Aprendizados
 

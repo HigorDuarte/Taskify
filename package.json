@@ -4,7 +4,8 @@
   "description": "A Task API to administrate your projects and tasks",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts"
+    "dev": "tsx watch src/server.ts",
+    "seed": "tsx prisma/seed.ts"
   },
   "author": "Higor Duarte",
   "license": "ISC",
