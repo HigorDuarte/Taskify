@@ -36,9 +36,10 @@ describe("POST /sessions", () => {
             email: "example@email.com",
             password: "123456"
         })
-    
+        
         expect(sessionEmailExampleError.status).toBe(401)
         expect(sessionEmailExampleError.body.message).toBe("Invalid email or password")
+
     })
 
     it("should return 401 when the password does not exist", async () => {
