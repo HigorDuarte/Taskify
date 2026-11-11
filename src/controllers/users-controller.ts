@@ -54,7 +54,7 @@ class UsersControllers{
 
         const activeProject = await prisma.project.count({where: {status: "ACTIVE", ownerId: id}})
 
-        if(activeProject > 0) throw new AppError(`The user has active projects to do`, 409)
+        if(activeProject > 0) throw new AppError(`The user has active projects to do`, 401)
 
         await prisma.user.delete({where: {id}})
         
