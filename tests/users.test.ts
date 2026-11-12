@@ -114,3 +114,35 @@ describe("DELETE /users", () => {
         expect(deleteUserResponse.body.message).toBe("The user has active projects to do")
     })
 })
+
+describe("GET /users", () => {
+    beforeEach(async () => {
+        await prisma.user.deleteMany()
+    })
+
+    afterAll(async () => {
+        await prisma.$disconnect()
+    })
+
+    it("should return all users", async () => {
+        const {token} = await createAndAuthenticateUser() 
+    
+        const getUserResponse = await request(app).post("/users").set("Authorization", `Bearer ${token}`)
+
+        expect(getUserResponse.status).toBe(200)
+    })
+
+    it("shouldn't return the users if user is not an admin", async () => {
+        const createUserResponse = await request(app).post("/users").send({
+            name: `Test User`,
+            email: "test@email.com",
+            password: "123456",
+        })
+
+        const { token } = createUserResponse.body
+
+        const getUserResponse = await request(app).get("/users").set("Authorization", `Bearer ${token}`)
+
+        expect(getUserResponse.status).toBe(403)
+    })
+})

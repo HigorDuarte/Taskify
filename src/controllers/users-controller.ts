@@ -33,9 +33,7 @@ class UsersControllers{
     async index(request: Request, response: Response){
         const allUsers = await prisma.user.findMany({omit: {passwordHash: true}})
         
-        if(!allUsers) throw new AppError("Nenhum usuário no banco")
-
-        return response.json(allUsers)
+        return response.status(200).json(allUsers)
     }
 
     async delete(request: Request, response: Response){
