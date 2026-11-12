@@ -68,15 +68,13 @@ describe("DELETE /users", () => {
     })
 
     it("should be able to delete own acount", async () => {
-        const {user, token} = await createAndAuthenticateUser()
+        const {token, user} = await createAndAuthenticateUser()
         
-        const deleteUserResponse = await request(app)
-        .delete(`/users/${user.id}`)
-        .set("Authorization", `Bearer ${token}`)
+        const deletedUser = await request(app).delete(`/users/${user.id}`).set("Authorization", `Bearer ${token}`)
 
-        expect(deleteUserResponse.status).toBe(204)
+        expect(deletedUser.status).toBe(204)
     })
-   
+    
     it("should return 404 if a user try to delete others acount", async () => {
         const userA = await createAndAuthenticateUser()
 
@@ -125,24 +123,19 @@ describe("GET /users", () => {
     })
 
     it("should return all users", async () => {
-        const {token} = await createAndAuthenticateUser() 
-    
-        const getUserResponse = await request(app).post("/users").set("Authorization", `Bearer ${token}`)
+        const {token, user} = await createAndAuthenticateUser(true)
+
+        const getUserResponse = await request(app).get("/users").set("Authorization", `Bearer ${token}`)
 
         expect(getUserResponse.status).toBe(200)
     })
 
     it("shouldn't return the users if user is not an admin", async () => {
-        const createUserResponse = await request(app).post("/users").send({
-            name: `Test User`,
-            email: "test@email.com",
-            password: "123456",
-        })
-
-        const { token } = createUserResponse.body
+        const {token} = await createAndAuthenticateUser()
 
         const getUserResponse = await request(app).get("/users").set("Authorization", `Bearer ${token}`)
 
         expect(getUserResponse.status).toBe(403)
+        expect(getUserResponse.body.message).toBe(`You don't have authorization`)
     })
 })
