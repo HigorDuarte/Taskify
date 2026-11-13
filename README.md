@@ -13,6 +13,7 @@ Projeto backend (sem front-end) desenvolvido do zero para consolidar os conceito
 - **JSON Web Token** (`jsonwebtoken`) para autenticação
 - **bcrypt** para hash de senhas
 - **Zod** para validação de dados de entrada e das variáveis de ambiente
+- **Vitest** + **Supertest** para testes de integração
 
 ## Funcionalidades
 
@@ -26,6 +27,7 @@ Projeto backend (sem front-end) desenvolvido do zero para consolidar os conceito
 - Seed para criação do primeiro usuário `ADMIN`
 - Tratamento de erros centralizado (`AppError` + middleware de erro)
 - Variáveis de ambiente validadas com Zod na inicialização
+- Testes de integração automatizados, rodando em um banco isolado
 
 ## Modelo de dados
 
@@ -83,7 +85,7 @@ Deletar um usuário apaga seus projetos, e deletar um projeto apaga suas tarefas
 
 ## Regras de negócio
 
-- Um usuário com projetos `ACTIVE` não pode ser deletado (`409 Conflict`).
+- Um usuário com projetos `ACTIVE` não pode ser deletado (`401`).
 - Uma tarefa só pode ser deletada se estiver com status `DONE` (`409 Conflict`).
 
 ## Como rodar localmente
@@ -144,6 +146,43 @@ O seed usa `upsert`, então pode ser executado mais de uma vez sem duplicar o ad
 
 As variáveis `ADMIN_*` são usadas apenas pelo seed.
 
+## Testes
+
+Os testes são de integração: usam o Supertest para fazer requisições reais à API e o Vitest como test runner. Eles rodam em um **banco PostgreSQL separado**, para nunca tocar nos dados de desenvolvimento.
+
+O que está coberto:
+
+- Cadastro e login (incluindo e-mail duplicado e credenciais inválidas)
+- Autorização por papel (`403` para `USER` em rotas de `ADMIN`)
+- Autorização por propriedade (`404` ao acessar recursos de outro usuário)
+- Regras de negócio (usuário com projetos ativos, tarefa só deletável se `DONE`)
+- CRUD de projetos e tarefas, com validação de dados e requisições sem token (`401`)
+
+### Como rodar os testes
+
+```bash
+# 1. Crie o banco de teste (o nome precisa terminar com _test)
+docker exec -it taskify-db psql -U postgres -c "CREATE DATABASE taskify_test;"
+
+# 2. Crie o arquivo .env.test na raiz do projeto, por exemplo:
+#    NODE_ENV=test
+#    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/taskify_test"
+#    JWT_SECRET="um-segredo-so-para-testes-com-32-caracteres-ou-mais"
+
+# 3. Aplique as migrations no banco de teste
+npx dotenv-cli -e .env.test -- npx prisma migrate deploy
+
+# 4. Rode os testes
+npm test
+```
+
+Como os testes são isolados:
+
+- `tests/setup.ts` carrega o `.env.test` e **aborta a execução** se `NODE_ENV` não for `test` ou se a `DATABASE_URL` não terminar com `_test`, o que impede apagar dados de desenvolvimento por engano.
+- `tests/cleanup.ts` limpa as tabelas (`task`, `project`, `user`, nessa ordem) antes de cada teste, então um teste nunca depende do outro.
+- Os arquivos de teste rodam em sequência (`fileParallelism: false`), porque todos compartilham o mesmo banco.
+- `tests/helpers.ts` concentra a criação de usuários (comuns e admin), projetos e tarefas. O admin é criado direto pelo Prisma e só depois faz login, já que o `role` fica dentro do token.
+
 ## Estrutura do projeto
 
 ```
@@ -162,17 +201,25 @@ prisma/
   schema.prisma
   seed.ts        # criação do usuário admin
   migrations/
+tests/
+  setup.ts       # carrega o .env.test e trava de segurança do banco
+  cleanup.ts     # limpa o banco antes de cada teste
+  helpers.ts     # criação de usuários, projetos e tarefas para os testes
+  *.test.ts      # users, sessions, projects e tasks
+vitest.config.ts
 ```
 
 ## Próximos passos
 
 - [x] Seed para criação do primeiro usuário `ADMIN`
-- [ ] Testes automatizados com Jest e Supertest (auth, autorização por papel e por propriedade)
+- [x] Testes automatizados com Vitest e Supertest (auth, autorização por papel e por propriedade)
 - [ ] Refresh token (access token curto + refresh token)
 
 ## Aprendizados
 
-Este projeto foi feito para praticar, do zero: modelagem de banco com relações no Prisma, hash de senhas, emissão e verificação de JWT, diferença entre autenticação e autorização, e os limites do JWT (como a role ficar "congelada" dentro do token até ele expirar).
+Este projeto foi feito para praticar, do zero: modelagem de banco com relações no Prisma, hash de senhas, emissão e verificação de JWT, diferença entre autenticação e autorização, e os limites do JWT (como a role ficar "congelada" dentro do token até ele expirar). Nos testes, isso apareceu na prática: para testar um admin, é preciso promover o usuário **antes** do login, senão o token sai com o papel antigo.
+
+Também pratiquei testes de integração com banco isolado, limpeza entre testes e uma trava de segurança para nunca rodar testes no banco errado.
 
 ## Autor
 
