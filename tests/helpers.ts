@@ -1,29 +1,60 @@
-import { app } from "@/app"
 import { prisma } from "@/database/prisma"
 import request from "supertest"
-
-export async function createAndAuthenticateUser(isAdmin = false){
-
+import { app } from "@/app"
+ 
+export async function createAndAuthUser(isAdmin = false, email = "test@email.com") {
     const userResponse = await request(app).post("/users").send({
         name: "Test User",
-        email: "test@email.com",
-        password: "123456"
+        email,
+        password: "123456",
     })
-
-    if(isAdmin){
+ 
+    // Promove ANTES do login, porque o role vai dentro do token
+    if (isAdmin) {
         await prisma.user.update({
-            where: {email: "test@email.com"},
-            data: {role: "ADMIN"}
+            where: { email },
+            data: { role: "ADMIN" },
         })
     }
-
-    const authenticatedUser = await request(app).post("/sessions").send({
-        email: "test@email.com",
-        password: "123456"
+ 
+    const authResponse = await request(app).post("/sessions").send({
+        email,
+        password: "123456",
     })
-
-    const token = authenticatedUser.body.token
-
-    return { token, user: userResponse.body}
-
+ 
+    return { token: authResponse.body.token as string, user: userResponse.body }
+}
+ 
+export async function createProject(
+    token: string,
+    data: { title: string; description?: string } = {
+        title: "Test Project",
+        description: "Test Description",
+    }
+) {
+    return request(app)
+        .post("/projects")
+        .set("Authorization", `Bearer ${token}`)
+        .send(data)
+}
+ 
+export async function createAuthUserAndAuthProject() {
+    const { token, user } = await createAndAuthUser()
+    const project = await createProject(token)
+ 
+    return { token, user, project }
+}
+ 
+export async function createTask(
+    token: string,
+    projectId: string,
+    data: { title: string; description?: string } = {
+        title: "Test Task",
+        description: "Test Description",
+    }
+) {
+    return request(app)
+        .post(`/projects/${projectId}/tasks`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(data)
 }
