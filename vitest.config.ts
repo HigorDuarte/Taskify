@@ -4,7 +4,7 @@ import path from "node:path"
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   test: {
-    setupFiles: ["./tests/setup.ts"],
+    setupFiles: ["./tests/setup.ts", "./tests/cleanup.ts"],
     fileParallelism: false,
   },
 })
